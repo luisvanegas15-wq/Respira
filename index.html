@@ -290,6 +290,19 @@ details.faq p{margin:8px 0 0;color:var(--muted)}
 .papel .res{grid-template-columns:repeat(auto-fit,minmax(min(120px,100%),1fr))!important}
 .papel .res b{white-space:nowrap;font-size:clamp(15px,4.2vw,19px)}
 
+@media (max-width:640px){
+  .tabla.apila{overflow:visible}
+  .tabla.apila table,.tabla.apila tbody,.tabla.apila tr,.tabla.apila td{display:block;min-width:0!important;width:auto}
+  .tabla.apila thead{display:none}
+  .tabla.apila tr{padding:12px 0;border-bottom:1px solid var(--line)}
+  .papel .tabla.apila tr{border-bottom-color:#E3E4EF}
+  .tabla.apila td{border:0;padding:3px 0;display:flex;justify-content:space-between;align-items:baseline;gap:12px;text-align:right}
+  .tabla.apila td::before{content:attr(data-l);color:var(--muted);font-weight:600;font-size:13px;text-align:left}
+  .papel .tabla.apila td::before{color:#676986}
+  .tabla.apila td:first-child{display:block;text-align:left;padding-bottom:6px}
+  .tabla.apila td:first-child::before,.tabla.apila td.vacia{content:none;display:none}
+}
+
 /* Celular */
 .bnav{display:none}
 @media (max-width:860px){
@@ -797,8 +810,8 @@ function panelPlan(r) {
     <div style="overflow-x:auto"><div style="min-width:520px">${grafica(sim, r.hoy)}</div></div>
     <div class="fila" style="gap:8px">${terminadas.map(f => f.sald.map(n => `<span class="chip sun">${esc(n)} · ${mesAnio(f.mes)}</span>`).join('')).join('')}</div></div>
   <div class="panel"><div class="fila" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Cronograma de pagos</h2><button class="btn peq menta" data-act="excelPlan">Descargar en Excel</button></div>
-    <div class="tabla"><table style="min-width:520px"><thead><tr><th>Mes</th><th class="r">Pagas</th><th class="r">Intereses y cuotas</th><th class="r">Te queda debiendo</th><th>Terminas</th></tr></thead>
-    <tbody>${fil.map(f => `<tr><td>${mesAnio(f.mes)}</td><td class="r num">${fmt(f.pago)}</td><td class="r num">${fmt(f.interes)}</td><td class="r num"><b>${fmt(f.saldo)}</b></td><td>${f.sald.map(esc).join(', ')}</td></tr>`).join('')}</tbody></table></div>
+    <div class="tabla apila"><table style="min-width:520px"><thead><tr><th>Mes</th><th class="r">Pagas</th><th class="r">Intereses y cuotas</th><th class="r">Te queda debiendo</th><th>Terminas</th></tr></thead>
+    <tbody>${fil.map(f => `<tr><td><b>${mesAnio(f.mes)}</b></td><td class="r num" data-l="Pagas">${fmt(f.pago)}</td><td class="r num" data-l="Intereses y cuotas">${fmt(f.interes)}</td><td class="r num" data-l="Te queda debiendo"><b>${fmt(f.saldo)}</b></td>${f.sald.length ? `<td data-l="Terminas">${f.sald.map(esc).join(', ')}</td>` : '<td class="vacia"></td>'}</tr>`).join('')}</tbody></table></div>
     ${sim.filas.length > 12 ? `<button class="btn peq sec" style="margin-top:10px" data-act="planTodo">${planTodo ? 'Ver solo 12 meses' : `Ver los ${sim.filas.length} meses`}</button>` : ''}</div>`;
 }
 const selFrec = () => `<label class="campo" style="min-width:170px">Me pagan<select id="frec">${[['quincenal', 'Cada quincena (15 y 30)'], ['mensual', 'Una vez al mes'], ['semanal', 'Cada semana']].map(([k, t]) => `<option value="${k}" ${k === (D.mes.frec || 'quincenal') ? 'selected' : ''}>${t}</option>`).join('')}</select></label>`;
@@ -1050,9 +1063,9 @@ function pintarEstado() {
     <div style="text-align:right"><small>Período</small><div><b>${fechaLarga(est.desde)} – ${fechaLarga(est.hasta)}</b></div><small>Generado el ${fechaLarga(hoyISO())}</small></div></div>
     <div class="cuerpo">
       <div class="res"><div><small>Saldo al inicio</small><b class="num">${fmt(e.ini)}</b></div><div><small>Pagos del período</small><b class="num" style="color:#1F9E86">${fmt(e.pagosP)}</b></div><div><small>Saldo al cierre</small><b class="num" style="color:#E95A49">${fmt(e.fin)}</b></div><div><small>Interés estimado / mes</small><b class="num">${fmt(e.interes)}</b></div></div>
-      <div class="tabla"><table><thead><tr><th>Deuda</th><th>Estado</th><th class="r">Saldo inicial</th><th class="r">Pagos</th><th class="r">Saldo final</th><th class="r">Avance</th></tr></thead>
-      <tbody>${e.filas.map(f => `<tr><td><b>${esc(f.nombre)}</b><br><small style="color:#676986">${esc(f.x.tipo)} · ${String(f.x.tasa).replace('.', ',')}% M.V.</small></td><td>${f.fin <= 0 ? 'Pagada' : esc(f.x.estado)}</td><td class="r num">${fmtM(f.ini, f.mon)}</td><td class="r num">${fmtM(f.pagosP, f.mon)}</td><td class="r num">${fmtM(f.fin, f.mon)}</td><td class="r num">${Math.round(f.avance * 100)}%</td></tr>`).join('') || '<tr><td colspan="6">No hay deudas para mostrar.</td></tr>'}</tbody></table></div>
-      <div><b style="font-family:var(--display)">Movimientos del período</b>${e.pagos.length ? `<div class="tabla" style="margin-top:8px"><table><thead><tr><th>Fecha</th><th>Deuda</th><th>Nota</th><th class="r">Valor</th></tr></thead><tbody>${e.pagos.map(p => `<tr><td class="num">${fechaLarga(p.fecha)}</td><td>${esc(p.nombre)}</td><td>${esc(p.nota || 'Pago')}</td><td class="r num">${fmtM(p.valor, p.mon)}</td></tr>`).join('')}</tbody></table></div>` : '<p style="color:#676986">No hay pagos en este período.</p>'}</div>
+      <div class="tabla apila"><table><thead><tr><th>Deuda</th><th>Estado</th><th class="r">Saldo inicial</th><th class="r">Pagos</th><th class="r">Saldo final</th><th class="r">Avance</th></tr></thead>
+      <tbody>${e.filas.map(f => `<tr><td><b>${esc(f.nombre)}</b><br><small style="color:#676986">${esc(f.x.tipo)} · ${String(f.x.tasa).replace('.', ',')}% M.V.</small></td><td data-l="Estado">${f.fin <= 0 ? 'Pagada' : esc(f.x.estado)}</td><td class="r num" data-l="Saldo inicial">${fmtM(f.ini, f.mon)}</td><td class="r num" data-l="Pagos">${fmtM(f.pagosP, f.mon)}</td><td class="r num" data-l="Saldo final"><b>${fmtM(f.fin, f.mon)}</b></td><td class="r num" data-l="Avance">${Math.round(f.avance * 100)}%</td></tr>`).join('') || '<tr><td colspan="6">No hay deudas para mostrar.</td></tr>'}</tbody></table></div>
+      <div><b style="font-family:var(--display)">Movimientos del período</b>${e.pagos.length ? `<div class="tabla apila" style="margin-top:8px"><table><thead><tr><th>Fecha</th><th>Deuda</th><th>Nota</th><th class="r">Valor</th></tr></thead><tbody>${e.pagos.map(p => `<tr><td class="num"><b>${fechaLarga(p.fecha)}</b></td><td data-l="Deuda">${esc(p.nombre)}</td><td data-l="Nota">${esc(p.nota || 'Pago')}</td><td class="r num" data-l="Valor">${fmtM(p.valor, p.mon)}</td></tr>`).join('')}</tbody></table></div>` : '<p style="color:#676986">No hay pagos en este período.</p>'}</div>
       ${e.nota ? `<p class="pie" style="margin:0"><b>${e.nota}</b></p>` : ''}
       <p class="pie">Resumen elaborado con la información que registraste en Respira. Los saldos son estimados y no reemplazan el extracto oficial de tu banco o acreedor.</p>
     </div></div>`;

@@ -1,5 +1,5 @@
 // Respira — funciona sin internet. Cambia VERSION cada vez que publiques una actualización.
-const VERSION = 'respira-v4';
+const VERSION = 'respira-v5';
 const ARCHIVOS = [
   "./",
   "fonts/bricolage-grotesque-latin-600-normal.woff2",
@@ -23,7 +23,7 @@ self.addEventListener('activate', e => e.waitUntil(caches.keys().then(k => Promi
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
   if (e.request.mode === 'navigate') {
-    e.respondWith(fetch(e.request).then(r => { const c = r.clone(); caches.open(VERSION).then(x => x.put('./', c)); return r; }).catch(() => caches.match('./')));
+    e.respondWith(fetch(e.request.url, { cache: 'no-cache' }).then(r => { const c = r.clone(); caches.open(VERSION).then(x => x.put('./', c)); return r; }).catch(() => caches.match('./')));
     return;
   }
   e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => { const c = res.clone(); caches.open(VERSION).then(x => x.put(e.request, c)); return res; })));
