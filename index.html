@@ -102,7 +102,8 @@ button{cursor:pointer}
 .yo b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .yo small{color:var(--night-muted);font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 main{min-width:0;padding-block:28px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.wrap{max-width:1080px;margin:0 auto;display:grid;gap:22px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:22px}
+.wrap>*,.grid>*,.dos>*,.papel .cuerpo>*{min-width:0}
 .cab{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
 .cab h1{font-size:clamp(26px,4vw,36px)}
 .cab p{margin:4px 0 0;color:var(--muted);max-width:60ch}
@@ -218,7 +219,7 @@ main{min-width:0;padding-block:28px 60px;padding-left:max(16px,env(safe-area-ins
 .papel .enc{background:#1E1F3B;color:#fff;padding:22px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
 .papel .enc h3{font-size:24px}
 .papel .enc small{color:#B9B8DA}
-.papel .cuerpo{padding:22px;display:grid;gap:18px}
+.papel .cuerpo{padding:22px;display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
 .papel .res{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .papel .res div{background:#F4F5FA;border-radius:10px;padding:10px 12px}
 .papel .res small{display:block;color:#676986;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
