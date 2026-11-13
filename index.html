@@ -282,9 +282,10 @@ details.faq p{margin:8px 0 0;color:var(--muted)}
 @media (max-width:560px){.paso{grid-template-columns:44px minmax(0,1fr)}.paso .btn{grid-column:2;justify-self:start}}
 
 /* Fechas y montos en iPhone */
-input[type="date"]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;min-height:44px;text-align:left;line-height:1.3}
-input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0}
-input[type="date"]::-webkit-calendar-picker-indicator{opacity:.6}
+.fecha{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0;min-height:44px;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;overflow:hidden;font-weight:500;color:var(--ink)}
+.fecha svg{width:18px;height:18px;flex:none;color:var(--muted)}
+.fecha:focus-within{outline:3px solid var(--lav);outline-offset:2px}
+.campo .fecha input[type="date"]{position:absolute;inset:0;width:100%;height:100%;min-width:0;opacity:0;margin:0;padding:0;border:0;-webkit-appearance:none;appearance:none;font-size:16px;cursor:pointer}
 .tabla td.r,.tabla th.r,.it b.num{white-space:nowrap}
 .papel .res{grid-template-columns:repeat(auto-fit,minmax(min(120px,100%),1fr))!important}
 .papel .res b{white-space:nowrap;font-size:clamp(15px,4.2vw,19px)}
@@ -762,6 +763,8 @@ function panelPrima(r) {
   return `<div class="dos">${izq}${der}</div>`;
 }
 let calcTab = 'plan', planTodo = false;
+const fFecha = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).replace('.', '') : 'Elegir fecha';
+const campoFecha = (id, v, req) => `<span class="fecha"><span data-fecha="${id}">${fFecha(v)}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg><input type="date" id="${id}" value="${v}"${req ? ' required' : ''}></span>`;
 const corto = v => { const a = Math.abs(v), m = MONEDAS[moneda];
   const t = a >= 1e6 ? (v / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace('.', ',') + ' M' : a >= 1e3 ? Math.round(v / 1e3) + (moneda === 'COP' ? ' mil' : 'k') : Math.round(v) + '';
   return moneda === 'EUR' ? t + ' €' : m.s + ' ' + t; };
@@ -939,7 +942,7 @@ function vPagos() {
   ${act.length ? `<form class="panel grid" id="fPago"><h2 style="margin:0">Registrar un pago</h2>
     <div class="grid g4"><label class="campo">Deuda<select id="p-deuda">${r.orden.concat(r.ds.filter(x => x.hoy <= 0)).map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join('')}</select></label>
     <label class="campo"><span class="fila" style="gap:6px">Valor en <select id="p-moneda" class="mini">${opcPago(r.orden.concat(r.ds)[0].id)}</select></span><input id="p-valor" class="num" inputmode="decimal" required placeholder="${fmtM(0, monD(r.orden.concat(r.ds)[0]))}"></label>
-    <label class="campo">Fecha<input id="p-fecha" type="date" value="${hoyISO()}" required></label>
+    <label class="campo">Fecha${campoFecha('p-fecha', hoyISO(), 1)}</label>
     <label class="campo">Nota (opcional)<input id="p-nota" maxlength="60" placeholder="Ej: abono extra"></label></div>
     <div class="fila"><button class="btn menta">Guardar pago</button><button type="button" class="btn sec peq" data-act="pagoMin">Usar el pago mínimo</button></div></form>`
     : `<div class="panel vacio"><h2>Primero anota tus deudas</h2><button class="btn" data-ir="deudas">Ir a Mis deudas</button></div>`}
@@ -960,7 +963,7 @@ function vEmocional() {
     <form class="panel grid" id="fEmo"><h2 style="margin:0">Anota un gasto</h2>
       <div class="campo">¿Qué sentías?<div class="emos">${EMOCIONES.map(([n, e]) => `<button type="button" class="${n === emoSel ? 'on' : ''}" data-emo="${n}">${e} ${n}</button>`).join('')}</div></div>
       <div class="grid g2"><label class="campo">¿Qué compraste?<input id="e-que" required maxlength="60" placeholder="Ej: domicilio"></label><label class="campo">Valor<input id="e-monto" class="num" inputmode="numeric" required placeholder="${fmt(0)}"></label></div>
-      <label class="campo">Fecha<input id="e-fecha" type="date" value="${hoyISO()}"></label>
+      <label class="campo">Fecha${campoFecha('e-fecha', hoyISO())}</label>
       <button class="btn">Guardar</button></form>
     <div class="panel"><h2>Tu patrón</h2>${por.length ? `<p style="margin-top:0">Tu detonante principal es <b>${por[0].e} ${por[0].n.toLowerCase()}</b>: ${por[0].c} compra${por[0].c > 1 ? 's' : ''} por <b class="num">${fmt(por[0].v)}</b>. ${D.mes.extra ? `Eso equivale a ${(por[0].v / (D.mes.extra || 1)).toFixed(1).replace('.', ',')} meses de tu abono extra.` : ''}</p>
       <div class="grid" style="gap:10px">${por.map(x => `<div class="hbar"><span>${x.e} ${x.n}</span><div class="barra"><i style="width:${x.v / max * 100}%;background:var(--lav)"></i></div><b class="num">${fmt(x.v)}</b></div>`).join('')}</div>
@@ -1017,8 +1020,8 @@ function vEstado() {
   return `${cab('Estado de cuenta', 'Genera un resumen con tus pagos y saldos de cualquier período. Descárgalo en PDF o Excel.')}
   <div class="panel"><div class="grid g4">
     <label class="campo">Deuda<select id="s-deuda"><option value="todas">Todas mis deudas</option>${D.deudas.map(x => `<option value="${x.id}" ${est.deuda === x.id ? 'selected' : ''}>${esc(x.nombre)}</option>`).join('')}</select></label>
-    <label class="campo">Desde<input type="date" id="s-desde" value="${est.desde}"></label>
-    <label class="campo">Hasta<input type="date" id="s-hasta" value="${est.hasta}"></label>
+    <label class="campo">Desde${campoFecha('s-desde', est.desde)}</label>
+    <label class="campo">Hasta${campoFecha('s-hasta', est.hasta)}</label>
     <div class="campo">Período rápido<div class="fila"><button class="btn peq sec" data-rango="mes">Este mes</button><button class="btn peq sec" data-rango="3">3 meses</button><button class="btn peq sec" data-rango="todo">Todo</button></div></div>
   </div>
   <div class="fila" style="margin-top:14px"><button class="btn coral" data-act="pdf">Descargar PDF</button><button class="btn menta" data-act="excelEstado">Descargar Excel</button></div></div>
@@ -1360,6 +1363,7 @@ document.addEventListener('submit', async ev => {
 function vistaLoginMsg(m) { const el = $('.login .msg'); if (el) el.textContent = m; }
 document.addEventListener('change', ev => {
   const t = ev.target, ds = t.dataset;
+  if (t.type === 'date') { const l = document.querySelector(`[data-fecha="${t.id}"]`); if (l) l.textContent = fFecha(t.value); }
   if (ds.ed) { const x = D.mes[ds.ed].find(z => z.id === ds.id); if (x) { x[ds.k] = ds.k === 'v' ? dinero(t.value) : t.value; guardar(); pintarVista(); } return; }
   if (t.id === 'frec') { D.mes.frec = t.value; guardar(); return pintarVista(); }
   if (t.id === 'diapago') { D.mes.diaPago = Math.min(31, Math.max(1, +t.value || 30)); guardar(); return pintarVista(); }
@@ -1388,6 +1392,7 @@ document.addEventListener('change', ev => {
 });
 document.addEventListener('input', ev => {
   const t = ev.target;
+  if (t.type === 'date') { const l = document.querySelector(`[data-fecha="${t.id}"]`); if (l) l.textContent = fFecha(t.value); }
   if (t.id === 'porque') { D.porque = t.value; guardar(); }
   if (t.id === 'cv-monto' || t.id === 'cv-ofrecen') { D.conv[t.id === 'cv-monto' ? 'monto' : 'ofrecen'] = t.value; guardar(); const r = $('#cv-res'); if (r) r.innerHTML = resConversor(); return; }
   if (t.id === 'ea') { const ea = decimal(t.value) / 100; $('#mv').textContent = ea > 0 ? ((Math.pow(1 + ea, 1 / 12) - 1) * 100).toFixed(2).replace('.', ',') + '%' : '—'; }

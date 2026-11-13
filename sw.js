@@ -1,5 +1,5 @@
 // Respira — funciona sin internet. Cambia VERSION cada vez que publiques una actualización.
-const VERSION = 'respira-v3';
+const VERSION = 'respira-v4';
 const ARCHIVOS = [
   "./",
   "fonts/bricolage-grotesque-latin-600-normal.woff2",
