@@ -55,7 +55,7 @@ button{cursor:pointer}
 .eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 
 /* ---------- Login ---------- */
-.login{min-height:100%;background:var(--night);color:var(--night-ink);display:grid;place-items:center;padding-block:40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));position:relative;overflow:hidden}
+.login{min-height:100vh;min-height:100dvh;background:var(--night);color:var(--night-ink);display:grid;place-items:center;padding-block:40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));position:relative;overflow:hidden}
 .login::before{content:"";position:absolute;width:620px;height:620px;border-radius:50%;left:50%;top:-180px;transform:translateX(-50%);background:radial-gradient(circle,color-mix(in srgb,var(--mint) 38%,transparent),transparent 65%);animation:respirar 8s ease-in-out infinite;pointer-events:none}
 .login-box{position:relative;width:min(560px,100%);display:grid;gap:26px;text-align:center}
 .marca{font-family:var(--display);font-weight:800;font-size:clamp(48px,11vw,84px);line-height:.9;letter-spacing:-.04em}
@@ -479,7 +479,21 @@ function dow(iso) { return (new Date(iso + 'T12:00:00').getDay() + 6) % 7; }
 function lunes(iso) { return sumarDias(iso, -dow(iso)); }
 
 let perfiles = [], yo = null, D = null, vista = 'inicio';
-const guardar = () => { if (yo) LS.set('respira:datos:' + yo.id, D); };
+const LIC_PUB = { x: "3K1sKw21aD8hwYyrfECZw2KG8nC2H8hGvyIB564SF-w", y: "Hi5MWU8Aenc7wf_Q9oqS5mn9iPxMjtiMaCFrghDcqSc" }; // llave pública del generador de licencias (se puede publicar sin riesgo)
+const REQUIERE = !!LIC_PUB && /github\.io$/.test(location.hostname);
+let licencia = null;
+const bloqueado = () => REQUIERE && !licencia;
+const b64uABytes = s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+async function verificarLic(token) {
+  try {
+    const [e, f] = String(token || '').trim().split('.'); if (!e || !f) return null;
+    const email = new TextDecoder().decode(b64uABytes(e));
+    const k = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: LIC_PUB.x, y: LIC_PUB.y }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+    const ok = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, k, b64uABytes(f), new TextEncoder().encode('RESPIRA1|' + email));
+    return ok ? email : null;
+  } catch (err) { return null; }
+}
+const guardar = () => { if (yo && !bloqueado()) LS.set('respira:datos:' + yo.id, D); };
 const guardarPerfiles = () => LS.set('respira:perfiles', perfiles);
 
 /* ================= Cálculos ================= */
@@ -549,8 +563,21 @@ function pantallaLogin() {
 }
 function vistaLogin(msg = '') {
   const r = $('#root');
+  if (loginModo === 'activar') {
+    r.innerHTML = `<div class="login"><div class="login-box" style="width:min(460px,100%)">
+      <div><div class="marca" style="font-size:56px">Respira<span>.</span></div><p class="lema">Activa tu app con el código que recibiste al comprar.</p></div>
+      <form class="login-form" id="fAct">
+        <label for="a-cod">Código de activación<textarea id="a-cod" rows="4" required style="background:var(--night);border:1px solid #3a3b60;border-radius:12px;padding:11px 12px;color:var(--night-ink);font:13px ui-monospace,Menlo,monospace;word-break:break-all;resize:vertical"></textarea></label>
+        <div class="msg">${esc(msg)}</div>
+        <div class="fila"><button class="btn" style="background:var(--sun);color:#1E1F3B">Activar</button><button type="button" class="linkbtn" data-act="volver">Volver</button></div>
+      </form>
+      <p style="color:var(--night-muted);font-size:13px;margin:0">Si recibiste un enlace, ábrelo y Respira se activa sola.</p>
+    </div></div>`;
+    return;
+  }
   if (loginModo === 'lista') {
     r.innerHTML = `<div class="login"><div class="login-box">
+      ${bloqueado() ? `<div style="background:var(--night-2);border-radius:18px;padding:14px 16px;display:grid;gap:10px;text-align:left"><b>Estás en modo demostración</b><span style="color:var(--night-muted);font-size:14px">Explora todo con el perfil de Ana. Para crear tu perfil y guardar tus datos, activa tu licencia.</span><button class="btn" data-act="activar" style="background:var(--sun);color:#1E1F3B;justify-self:start">Activar mi licencia</button></div>` : ''}
       <div><div class="marca">Respira<span>.</span></div><p class="lema">Tu plan para salir de deudas, a tu ritmo.</p></div>
       <div class="eyebrow" style="color:var(--night-muted)">¿Quién va a entrar?</div>
       <div class="perfiles">
@@ -641,7 +668,7 @@ function pintarVista() {
   if (vista === 'estado') pintarEstado();
 }
 const cab = (t, p, extra = '') => `<div class="cab"><div><h1>${t}</h1>${p ? `<p>${p}</p>` : ''}</div>${extra}</div>`;
-const bannerDemo = () => D.demo ? `<div class="panel" style="background:var(--sun-s);border-color:transparent;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between"><span><b>Estás viendo datos de ejemplo.</b> Explora con calma y bórralos cuando quieras empezar con los tuyos.</span><button class="btn peq" data-act="borrarEjemplo">Empezar con mis datos</button></div>` : '';
+const bannerDemo = () => bloqueado() ? `<div class="panel" style="background:var(--sun-s);border-color:transparent;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between"><span><b>Modo demostración.</b> Explora todo lo que quieras; los cambios no se guardan.</span><button class="btn peq" data-act="activar">Activar mi licencia</button></div>` : D.demo ? `<div class="panel" style="background:var(--sun-s);border-color:transparent;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between"><span><b>Estás viendo datos de ejemplo.</b> Explora con calma y bórralos cuando quieras empezar con los tuyos.</span><button class="btn peq" data-act="borrarEjemplo">Empezar con mis datos</button></div>` : '';
 
 /* ---------- Inicio ---------- */
 function vInicio() {
@@ -1081,6 +1108,7 @@ function vAjustes() {
       <label class="campo">Correo<input id="a-correo" type="email" required maxlength="80" value="${esc(yo.correo)}"></label>
       <label class="campo">PIN nuevo (déjalo vacío para no cambiarlo)<input id="a-pin" inputmode="numeric" maxlength="4" pattern="\\d{4}"></label>
       <div class="fila"><button class="btn">Guardar perfil</button></div>
+      ${licencia ? `<p style="margin:0;font-size:13px"><span class="chip ok">Licencia activa</span> a nombre de ${esc(licencia.email)}</p>` : ''}
       <p style="margin:0;font-size:12.5px;color:var(--muted)">El PIN evita que otra persona que use este dispositivo vea tu información. Tus datos no salen del dispositivo.</p>
     </form>
     <div class="grid">
@@ -1312,7 +1340,8 @@ document.addEventListener('click', async ev => {
   if (ds.rango) { const h = hoyISO(); est.hasta = h; est.desde = ds.rango === 'mes' ? h.slice(0, 8) + '01' : ds.rango === '3' ? sumarDias(h, -90) : (D.pagos.map(p => p.fecha).sort()[0] || D.inicio || h); return pintarVista(); }
   if (ds.avperf !== undefined) { document.querySelectorAll('[data-avperf]').forEach(b => { b.classList.toggle('sel', b === t); b.style.borderColor = b === t ? 'var(--sun)' : 'transparent'; }); t.closest('form').dataset.av = ds.avperf; return; }
   switch (ds.act) {
-    case 'nuevo': loginModo = 'nuevo'; nuevoAv = Math.floor(Math.random() * AV.length); return vistaLogin();
+    case 'activar': cerrarModal(); if (yo) { yo = null; D = null; SS.del('respira:sesion'); } loginModo = 'activar'; return vistaLogin();
+    case 'nuevo': if (bloqueado()) { loginModo = 'activar'; return vistaLogin('Para crear tu perfil, primero activa tu licencia.'); } loginModo = 'nuevo'; nuevoAv = Math.floor(Math.random() * AV.length); return vistaLogin();
     case 'volver': loginModo = 'lista'; pinBuf = ''; return vistaLogin();
     case 'borrar': pinBuf = pinBuf.slice(0, -1); return vistaLogin();
     case 'olvide': loginModo = 'olvide'; return vistaLogin();
@@ -1327,7 +1356,7 @@ document.addEventListener('click', async ev => {
     case 'excelEstado': return excelEstado();
     case 'excelTodo': return excelTodo();
     case 'respaldo': return respaldo();
-    case 'borrarEjemplo': return confirmar('¿Empezar con tus datos?', 'Se borrarán todas las deudas, pagos y registros de ejemplo. Tu perfil se queda.', () => { D = Object.assign(datosVacios(), { moneda }); guardar(); vista = 'inicio'; pintarApp(); aviso('Listo. Empieza por Mi mes y Mis deudas.'); }, 'Sí, borrar ejemplos');
+    case 'borrarEjemplo': if (bloqueado()) { loginModo = 'activar'; yo = null; D = null; SS.del('respira:sesion'); return vistaLogin(); } return confirmar('¿Empezar con tus datos?', 'Se borrarán todas las deudas, pagos y registros de ejemplo. Tu perfil se queda.', () => { D = Object.assign(datosVacios(), { moneda }); guardar(); vista = 'inicio'; pintarApp(); aviso('Listo. Empieza por Mi mes y Mis deudas.'); }, 'Sí, borrar ejemplos');
     case 'eliminarPerfil': return confirmar('¿Eliminar tu perfil?', 'Se borrarán tu perfil y todos tus datos de este dispositivo. Descarga una copia antes si la quieres conservar.', () => { perfiles = perfiles.filter(p => p.id !== yo.id); guardarPerfiles(); LS.del('respira:datos:' + yo.id); salir(); }, 'Sí, eliminar todo');
   }
 });
@@ -1342,6 +1371,12 @@ document.addEventListener('submit', async ev => {
     const ej = $('#n-ej').checked, mon = $('#n-moneda').value, nd = ej ? escalar(datosEjemplo(), MONEDAS[mon].f) : datosVacios(); nd.moneda = mon;
     LS.set('respira:datos:' + p.id, nd);
     entrar(p); if (!ej) ir('ayuda'); return;
+  }
+  if (f.id === 'fAct') {
+    let cod = $('#a-cod').value.trim(); const m = cod.match(/activar=([\w.-]+)/); if (m) cod = m[1];
+    const em = await verificarLic(cod);
+    if (!em) return vistaLoginMsg('Ese código no es válido. Cópialo completo, sin espacios.');
+    licencia = { email: em, token: cod }; LS.set('respira:licencia', licencia); loginModo = 'lista'; vistaLogin(); return aviso('Respira quedó activada para ' + em);
   }
   if (f.id === 'fOlvide') {
     const p = perfiles.find(x => x.id === pinPerfil);
@@ -1427,6 +1462,22 @@ document.addEventListener('keydown', ev => {
     demo.pin = await hashPin(demo.id, '1234');
     perfiles = [demo]; guardarPerfiles(); LS.set('respira:datos:' + demo.id, datosEjemplo());
   }
+  if (REQUIERE) {
+    const h = location.hash.match(/^#activar=([\w.-]+)/), guardada = LS.get('respira:licencia', null);
+    if (h) {
+      const em = await verificarLic(h[1]);
+      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+      if (em) { licencia = { email: em, token: h[1] }; LS.set('respira:licencia', licencia); setTimeout(() => aviso('Respira quedó activada para ' + em), 500); }
+      else setTimeout(() => aviso('Ese enlace de activación no es válido'), 500);
+    }
+    if (!licencia && guardada && await verificarLic(guardada.token)) licencia = guardada;
+  }
+  window.addEventListener('hashchange', async () => {
+    const h = REQUIERE && location.hash.match(/^#activar=([\w.-]+)/); if (!h) return;
+    const em = await verificarLic(h[1]); try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    if (em) { licencia = { email: em, token: h[1] }; LS.set('respira:licencia', licencia); aviso('Respira quedó activada para ' + em); if (!yo) { loginModo = 'lista'; vistaLogin(); } else pintarApp(); }
+    else aviso('Ese enlace de activación no es válido');
+  });
   const s = SS.get('respira:sesion'), p = s && perfiles.find(x => x.id === s);
   if (p) entrar(p); else vistaLogin();
 })();
